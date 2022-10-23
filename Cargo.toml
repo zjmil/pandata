@@ -1,0 +1,9 @@
+[package]
+name = "pandata"
+description = "A CLI tool for converting data"
+version = "0.1.0"
+authors = ["Zach Miller <zach@zjmil.org>"]
+repository = "https://github.com/zjmil/pandata"
+edition = "2021"
+
+[dependencies]

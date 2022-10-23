@@ -1,0 +1,6 @@
+# Editors
+.idea/
+
+# Rust
+/target
+
