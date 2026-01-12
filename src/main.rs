@@ -1,15 +1,6 @@
-use std::ffi::OsStr;
-use std::path::Path;
-
 use anyhow::Result;
-use csv::CsvFormat;
-use pandata::Pandata;
-use parquet::ParquetFormat;
-
-mod csv;
-mod json;
-mod pandata;
-mod parquet;
+use pandata::build_pandata;
+use pandata::parse_format;
 
 // #[derive(Parser, Debug)]
 // #[command(version, about, long_about = None)]
@@ -73,33 +64,6 @@ impl Cli {
 
         cli
     }
-}
-
-fn parse_format_path(p: impl AsRef<Path>) -> Option<String> {
-    p.as_ref()
-        .extension()
-        .map(OsStr::to_str)
-        .flatten()
-        .map(str::to_owned)
-}
-
-fn parse_format(format: Option<String>, input_path: &str) -> Option<String> {
-    format.or_else(|| parse_format_path(&input_path))
-}
-
-fn build_pandata() -> Pandata {
-    // build with default formats
-
-    let csv_format = CsvFormat::new();
-    let json_format = json::JsonFormat::new();
-    let parquet_format = ParquetFormat::new();
-
-    let mut pandata = Pandata::new();
-    pandata.add_format(Box::new(csv_format));
-    pandata.add_format(Box::new(json_format));
-    pandata.add_format(Box::new(parquet_format));
-
-    pandata
 }
 
 fn main() -> Result<()> {

@@ -42,7 +42,8 @@ impl Format for CsvFormat {
     }
 
     fn write(&self, path: &str, _args: &Args, lf: LazyFrame) -> anyhow::Result<()> {
-        let options = CsvWriterOptions::default();
+        let mut options = CsvWriterOptions::default();
+        options.maintain_order = true;
         lf.sink_csv(path, options)?;
         Ok(())
     }
