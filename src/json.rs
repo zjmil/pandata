@@ -21,14 +21,14 @@ impl Format for JsonFormat {
         FormatOptions::new()
     }
 
-    fn read(&self, path: &str, args: &Args) -> anyhow::Result<LazyFrame> {
+    fn read(&self, path: &str, _args: &Args) -> anyhow::Result<LazyFrame> {
         let file = File::open(path)?;
 
         let lf = JsonReader::new(file).finish()?.lazy();
         Ok(lf)
     }
 
-    fn write(&self, path: &str, args: &Args, lf: LazyFrame) -> anyhow::Result<()> {
+    fn write(&self, path: &str, _args: &Args, lf: LazyFrame) -> anyhow::Result<()> {
         let options = JsonWriterOptions::default();
         lf.sink_json(path, options)?;
         Ok(())

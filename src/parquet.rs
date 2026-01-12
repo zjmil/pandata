@@ -18,13 +18,13 @@ impl Format for ParquetFormat {
         FormatOptions::new()
     }
 
-    fn read(&self, path: &str, args: &Args) -> anyhow::Result<LazyFrame> {
+    fn read(&self, path: &str, _args: &Args) -> anyhow::Result<LazyFrame> {
         let args = ScanArgsParquet::default();
         let lf = LazyFrame::scan_parquet(path, args)?;
         Ok(lf)
     }
 
-    fn write(&self, path: &str, args: &Args, lf: LazyFrame) -> anyhow::Result<()> {
+    fn write(&self, path: &str, _args: &Args, lf: LazyFrame) -> anyhow::Result<()> {
         let options = ParquetWriteOptions::default();
         lf.sink_parquet(path, options)?;
         Ok(())

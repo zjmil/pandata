@@ -1,10 +1,9 @@
-use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::path::Path;
 
 use anyhow::Result;
 use csv::CsvFormat;
-use pandata::{Args, Pandata};
+use pandata::Pandata;
 use parquet::ParquetFormat;
 
 mod csv;
@@ -38,31 +37,40 @@ struct Cli {
     to_file: Option<String>,
     from_format: Option<String>,
     to_format: Option<String>,
-    from_args: Args,
-    to_args: Args,
 }
 
 impl Cli {
-    fn parse(pandata: &Pandata) -> Cli {
+    fn parse() -> Cli {
         let mut cli = Cli::default();
-        let args: Vec<String> = std::env::args().collect();
-        
+        let args: Vec<String> = std::env::args().skip(1).collect();
         let mut idx = 0;
-        
-        let mut other_args = HashMap::new();
-        let mut curr_opt_arg = None
+
         while idx < args.len() {
             let arg = &args[idx];
-            match arg.strip_prefix("--") {
-                Some(opt_arg) =>
-                    if opt_arg == "from" {
-                        
+            match arg.as_str() {
+                "--from" => {
+                    idx += 1;
+                    if let Some(value) = args.get(idx) {
+                        cli.from_format = Some(value.to_owned());
                     }
-                None =>
+                }
+                "--to" => {
+                    idx += 1;
+                    if let Some(value) = args.get(idx) {
+                        cli.to_format = Some(value.to_owned());
+                    }
+                }
+                _ => {
+                    if cli.from_file.is_none() {
+                        cli.from_file = Some(arg.to_owned());
+                    } else if cli.to_file.is_none() {
+                        cli.to_file = Some(arg.to_owned());
+                    }
+                }
             }
-            
+            idx += 1;
         }
-        
+
         cli
     }
 }
@@ -97,21 +105,19 @@ fn build_pandata() -> Pandata {
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    let from_file = match cli.from_file {
-        Some(ref x) if x != "-" => x,
+    let from_file = match cli.from_file.as_deref() {
+        Some(x) if x != "-" => x,
         _ => "/dev/stdin",
     };
-    let to_file = match cli.to_file {
-        Some(ref x) if x != "-" => x,
+    let to_file = match cli.to_file.as_deref() {
+        Some(x) if x != "-" => x,
         _ => "/dev/stdout",
     };
 
-    let from_format = parse_format(cli.from.clone(), &from_file)
+    let from_format = parse_format(cli.from_format.clone(), from_file)
         .expect("Unable to parse input format. Must be explicit if reading from stdin.");
-    let to_format = parse_format(cli.to.clone(), &to_file)
+    let to_format = parse_format(cli.to_format.clone(), to_file)
         .expect("Unable to parse output format. Must be explicit if writing to stdout.");
-
-    println!("pandata: {:?}", cli);
 
     let pandata = build_pandata();
 

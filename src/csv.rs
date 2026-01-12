@@ -1,5 +1,4 @@
 use crate::pandata::{Args, Format, FormatOptions};
-use polars::export::chrono::format::parse;
 use polars::io::SerReader;
 use polars::prelude::{CsvParseOptions, CsvReadOptions, CsvWriterOptions, IntoLazy, LazyFrame};
 use std::path::PathBuf;
@@ -42,7 +41,7 @@ impl Format for CsvFormat {
         Ok(lf)
     }
 
-    fn write(&self, path: &str, args: &Args, lf: LazyFrame) -> anyhow::Result<()> {
+    fn write(&self, path: &str, _args: &Args, lf: LazyFrame) -> anyhow::Result<()> {
         let options = CsvWriterOptions::default();
         lf.sink_csv(path, options)?;
         Ok(())

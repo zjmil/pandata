@@ -2,7 +2,6 @@ use anyhow::Context;
 use anyhow::Result;
 use polars::prelude::LazyFrame;
 use std::collections::{HashMap, HashSet};
-use std::iter::empty;
 
 pub struct Pandata {
     formats: HashMap<String, Box<dyn Format>>,
@@ -37,6 +36,8 @@ impl Pandata {
             .formats
             .get(to_format)
             .with_context(|| format!("No writer for format: {}", to_format))?;
+        let _ = reader.read_options().options().count();
+        let _ = writer.read_options().options().count();
         let lf = reader.read(from_path, &reader_args)?;
         writer.write(to_path, &writer_args, lf)?;
         Ok(())
@@ -83,10 +84,6 @@ impl Args {
             Some(v) if v.len() >= 1 => v.first().map(|x| x.clone()),
             _ => None,
         }
-    }
-
-    pub fn long(&self, key: &str) -> Option<i64> {
-        self.string(key).map(|s| s.parse().ok()).flatten()
     }
 
     pub fn char(&self, key: &str) -> Option<u8> {
