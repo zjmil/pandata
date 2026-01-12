@@ -4,6 +4,10 @@ description = "A CLI tool for converting data"
 version = "0.1.0"
 authors = ["Zach Miller <zach@zjmil.org>"]
 repository = "https://github.com/zjmil/pandata"
+license = "MIT"
+readme = "README.md"
+keywords = ["data", "cli", "conversion", "formats"]
+categories = ["command-line-utilities", "data-structures", "parsing"]
 edition = "2021"
 
 [dependencies]
