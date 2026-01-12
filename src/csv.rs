@@ -1,6 +1,7 @@
-use crate::pandata::Format;
+use crate::pandata::{Args, Format, FormatOptions};
+use polars::export::chrono::format::parse;
 use polars::io::SerReader;
-use polars::prelude::{CsvReadOptions, CsvWriterOptions, IntoLazy, LazyFrame};
+use polars::prelude::{CsvParseOptions, CsvReadOptions, CsvWriterOptions, IntoLazy, LazyFrame};
 use std::path::PathBuf;
 
 pub struct CsvFormat;
@@ -16,19 +17,32 @@ impl Format for CsvFormat {
         "csv"
     }
 
-    fn read(&self, path: &str) -> anyhow::Result<LazyFrame> {
+    fn read_options(&self) -> FormatOptions {
+        FormatOptions::from_keys(["separator", "quote-char"])
+    }
+
+    fn read(&self, path: &str, args: &Args) -> anyhow::Result<LazyFrame> {
         // TODO: this crashes
         // let lf = LazyCsvReader::new(path)
         //     .with_has_header(true)
         //     .finish()?;
-        let lf = CsvReadOptions::default()
+
+        let mut parse_options = CsvParseOptions::default();
+        if let Some(sep) = args.char("separator") {
+            parse_options = parse_options.with_separator(sep)
+        }
+        if let Some(quote_char) = args.char("quote-char") {
+            parse_options = parse_options.with_quote_char(Some(quote_char))
+        }
+        let read_options = CsvReadOptions::default().with_parse_options(parse_options);
+        let lf = read_options
             .try_into_reader_with_file_path(Some(PathBuf::from(path)))?
             .finish()?
             .lazy();
         Ok(lf)
     }
 
-    fn write(&self, path: &str, lf: LazyFrame) -> anyhow::Result<()> {
+    fn write(&self, path: &str, args: &Args, lf: LazyFrame) -> anyhow::Result<()> {
         let options = CsvWriterOptions::default();
         lf.sink_csv(path, options)?;
         Ok(())

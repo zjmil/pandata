@@ -1,4 +1,5 @@
 use crate::pandata::Format;
+use crate::pandata::{Args, FormatOptions};
 use polars::io::SerReader;
 use polars::prelude::{IntoLazy, JsonReader, JsonWriterOptions, LazyFrame};
 use std::fs::File;
@@ -16,13 +17,18 @@ impl Format for JsonFormat {
         "json"
     }
 
-    fn read(&self, path: &str) -> anyhow::Result<LazyFrame> {
+    fn read_options(&self) -> FormatOptions {
+        FormatOptions::new()
+    }
+
+    fn read(&self, path: &str, args: &Args) -> anyhow::Result<LazyFrame> {
         let file = File::open(path)?;
+
         let lf = JsonReader::new(file).finish()?.lazy();
         Ok(lf)
     }
 
-    fn write(&self, path: &str, lf: LazyFrame) -> anyhow::Result<()> {
+    fn write(&self, path: &str, args: &Args, lf: LazyFrame) -> anyhow::Result<()> {
         let options = JsonWriterOptions::default();
         lf.sink_json(path, options)?;
         Ok(())

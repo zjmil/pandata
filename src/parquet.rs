@@ -1,4 +1,4 @@
-use crate::pandata::Format;
+use crate::pandata::{Args, Format, FormatOptions};
 use polars::prelude::{LazyFrame, ParquetWriteOptions, ScanArgsParquet};
 
 pub struct ParquetFormat;
@@ -14,13 +14,17 @@ impl Format for ParquetFormat {
         "parquet"
     }
 
-    fn read(&self, path: &str) -> anyhow::Result<LazyFrame> {
+    fn read_options(&self) -> FormatOptions {
+        FormatOptions::new()
+    }
+
+    fn read(&self, path: &str, args: &Args) -> anyhow::Result<LazyFrame> {
         let args = ScanArgsParquet::default();
         let lf = LazyFrame::scan_parquet(path, args)?;
         Ok(lf)
     }
 
-    fn write(&self, path: &str, lf: LazyFrame) -> anyhow::Result<()> {
+    fn write(&self, path: &str, args: &Args, lf: LazyFrame) -> anyhow::Result<()> {
         let options = ParquetWriteOptions::default();
         lf.sink_parquet(path, options)?;
         Ok(())
