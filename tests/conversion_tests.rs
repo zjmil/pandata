@@ -4,22 +4,47 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::Result;
-use pandata::{build_pandata, Args, CsvFormat, Format, JsonFormat, ParquetFormat};
+use pandata::{build_pandata, Args, Format};
 use polars::prelude::{Column, DataFrame, DataType, IntoLazy, NamedFrom, Series};
+
+#[cfg(feature = "avro")]
+use pandata::AvroFormat;
+#[cfg(feature = "csv")]
+use pandata::CsvFormat;
+#[cfg(feature = "json")]
+use pandata::JsonFormat;
+#[cfg(feature = "parquet")]
+use pandata::ParquetFormat;
+#[cfg(feature = "tsv")]
+use pandata::TsvFormat;
 
 #[derive(Clone, Copy)]
 enum FormatKind {
+    #[cfg(feature = "csv")]
     Csv,
+    #[cfg(feature = "json")]
     Json,
+    #[cfg(feature = "parquet")]
     Parquet,
+    #[cfg(feature = "tsv")]
+    Tsv,
+    #[cfg(feature = "avro")]
+    Avro,
 }
 
 impl FormatKind {
     fn name(self) -> &'static str {
         match self {
+            #[cfg(feature = "csv")]
             FormatKind::Csv => "csv",
+            #[cfg(feature = "json")]
             FormatKind::Json => "json",
+            #[cfg(feature = "parquet")]
             FormatKind::Parquet => "parquet",
+            #[cfg(feature = "tsv")]
+            FormatKind::Tsv => "tsv",
+            #[cfg(feature = "avro")]
+            FormatKind::Avro => "avro",
         }
     }
 
@@ -110,9 +135,16 @@ fn sample_dataframe() -> Result<DataFrame> {
 
 fn format_for(kind: FormatKind) -> Box<dyn Format> {
     match kind {
+        #[cfg(feature = "csv")]
         FormatKind::Csv => Box::new(CsvFormat::new()),
+        #[cfg(feature = "json")]
         FormatKind::Json => Box::new(JsonFormat::new()),
+        #[cfg(feature = "parquet")]
         FormatKind::Parquet => Box::new(ParquetFormat::new()),
+        #[cfg(feature = "tsv")]
+        FormatKind::Tsv => Box::new(TsvFormat::new()),
+        #[cfg(feature = "avro")]
+        FormatKind::Avro => Box::new(AvroFormat::new()),
     }
 }
 
@@ -193,32 +225,62 @@ fn assert_conversion(from: FormatKind, to: FormatKind) -> Result<()> {
     Ok(())
 }
 
+#[cfg(all(feature = "csv", feature = "json"))]
 #[test]
 fn converts_csv_to_json() -> Result<()> {
     assert_conversion(FormatKind::Csv, FormatKind::Json)
 }
 
+#[cfg(all(feature = "csv", feature = "parquet"))]
 #[test]
 fn converts_csv_to_parquet() -> Result<()> {
     assert_conversion(FormatKind::Csv, FormatKind::Parquet)
 }
 
+#[cfg(all(feature = "json", feature = "csv"))]
 #[test]
 fn converts_json_to_csv() -> Result<()> {
     assert_conversion(FormatKind::Json, FormatKind::Csv)
 }
 
+#[cfg(all(feature = "json", feature = "parquet"))]
 #[test]
 fn converts_json_to_parquet() -> Result<()> {
     assert_conversion(FormatKind::Json, FormatKind::Parquet)
 }
 
+#[cfg(all(feature = "parquet", feature = "csv"))]
 #[test]
 fn converts_parquet_to_csv() -> Result<()> {
     assert_conversion(FormatKind::Parquet, FormatKind::Csv)
 }
 
+#[cfg(all(feature = "parquet", feature = "json"))]
 #[test]
 fn converts_parquet_to_json() -> Result<()> {
     assert_conversion(FormatKind::Parquet, FormatKind::Json)
+}
+
+#[cfg(all(feature = "csv", feature = "tsv"))]
+#[test]
+fn converts_csv_to_tsv() -> Result<()> {
+    assert_conversion(FormatKind::Csv, FormatKind::Tsv)
+}
+
+#[cfg(all(feature = "tsv", feature = "csv"))]
+#[test]
+fn converts_tsv_to_csv() -> Result<()> {
+    assert_conversion(FormatKind::Tsv, FormatKind::Csv)
+}
+
+#[cfg(all(feature = "avro", feature = "csv"))]
+#[test]
+fn converts_csv_to_avro() -> Result<()> {
+    assert_conversion(FormatKind::Csv, FormatKind::Avro)
+}
+
+#[cfg(all(feature = "avro", feature = "json"))]
+#[test]
+fn converts_avro_to_json() -> Result<()> {
+    assert_conversion(FormatKind::Avro, FormatKind::Json)
 }

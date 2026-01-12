@@ -1,25 +1,45 @@
 use std::ffi::OsStr;
 use std::path::Path;
 
+#[cfg(feature = "csv")]
 mod csv;
+#[cfg(feature = "json")]
 mod json;
 mod pandata;
+#[cfg(feature = "parquet")]
 mod parquet;
+#[cfg(feature = "tsv")]
+mod tsv;
 
+#[cfg(feature = "avro")]
+mod avro;
+
+#[cfg(feature = "csv")]
 pub use csv::CsvFormat;
+#[cfg(feature = "json")]
 pub use json::JsonFormat;
 pub use pandata::{Args, Format, FormatOptions, Pandata};
+#[cfg(feature = "parquet")]
 pub use parquet::ParquetFormat;
+#[cfg(feature = "tsv")]
+pub use tsv::TsvFormat;
+
+#[cfg(feature = "avro")]
+pub use avro::AvroFormat;
 
 pub fn build_pandata() -> Pandata {
-    let csv_format = CsvFormat::new();
-    let json_format = JsonFormat::new();
-    let parquet_format = ParquetFormat::new();
-
     let mut pandata = Pandata::new();
-    pandata.add_format(Box::new(csv_format));
-    pandata.add_format(Box::new(json_format));
-    pandata.add_format(Box::new(parquet_format));
+
+    #[cfg(feature = "csv")]
+    pandata.add_format(Box::new(CsvFormat::new()));
+    #[cfg(feature = "json")]
+    pandata.add_format(Box::new(JsonFormat::new()));
+    #[cfg(feature = "parquet")]
+    pandata.add_format(Box::new(ParquetFormat::new()));
+    #[cfg(feature = "tsv")]
+    pandata.add_format(Box::new(TsvFormat::new()));
+    #[cfg(feature = "avro")]
+    pandata.add_format(Box::new(AvroFormat::new()));
 
     pandata
 }
