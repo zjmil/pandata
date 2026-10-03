@@ -25,3 +25,9 @@ parquet = ["polars/parquet"]
 tsv = ["csv"]
 avro = ["polars/avro"]
 all = ["csv", "json", "parquet", "tsv", "avro"]
+
+[[bench]]
+name = "conversions"
+harness = false
+test = false
+required-features = ["csv", "json", "parquet"]
