@@ -23,8 +23,13 @@ use pandata::IpcFormat;
 #[cfg(feature = "ndjson")]
 use pandata::NdjsonFormat;
 
+#[cfg(feature = "sqlite")]
+use pandata::SqliteFormat;
+
 #[derive(Clone, Copy)]
 enum FormatKind {
+    #[cfg(feature = "sqlite")]
+    Sqlite,
     #[cfg(feature = "ipc")]
     Ipc,
     #[cfg(feature = "ndjson")]
@@ -44,6 +49,8 @@ enum FormatKind {
 impl FormatKind {
     fn name(self) -> &'static str {
         match self {
+            #[cfg(feature = "sqlite")]
+            FormatKind::Sqlite => "sqlite",
             #[cfg(feature = "ipc")]
             FormatKind::Ipc => "ipc",
             #[cfg(feature = "ndjson")]
@@ -148,6 +155,8 @@ fn sample_dataframe() -> Result<DataFrame> {
 
 fn format_for(kind: FormatKind) -> Box<dyn Format> {
     match kind {
+        #[cfg(feature = "sqlite")]
+        FormatKind::Sqlite => Box::new(SqliteFormat::new()),
         #[cfg(feature = "ipc")]
         FormatKind::Ipc => Box::new(IpcFormat::new()),
         #[cfg(feature = "ndjson")]
@@ -358,4 +367,18 @@ fn rejects_unknown_format() {
         .convert("unused", "unused", "unknown", "unknown")
         .unwrap_err();
     assert!(error.to_string().contains("No reader for format: unknown"));
+}
+
+#[cfg(all(feature = "sqlite", feature = "csv"))]
+#[test]
+fn converts_csv_to_sqlite_and_back() -> Result<()> {
+    assert_conversion(FormatKind::Csv, FormatKind::Sqlite)?;
+    assert_conversion(FormatKind::Sqlite, FormatKind::Csv)
+}
+
+#[cfg(all(feature = "sqlite", feature = "parquet"))]
+#[test]
+fn converts_parquet_to_sqlite_and_back() -> Result<()> {
+    assert_conversion(FormatKind::Parquet, FormatKind::Sqlite)?;
+    assert_conversion(FormatKind::Sqlite, FormatKind::Parquet)
 }
