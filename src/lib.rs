@@ -3,6 +3,8 @@ use std::path::Path;
 
 #[cfg(feature = "csv")]
 mod csv;
+#[cfg(feature = "ipc")]
+mod ipc;
 #[cfg(feature = "json")]
 mod json;
 mod pandata;
@@ -16,6 +18,8 @@ mod avro;
 
 #[cfg(feature = "csv")]
 pub use csv::CsvFormat;
+#[cfg(feature = "ipc")]
+pub use ipc::IpcFormat;
 #[cfg(feature = "json")]
 pub use json::JsonFormat;
 pub use pandata::{Args, Format, FormatOptions, Pandata};
@@ -40,6 +44,9 @@ pub fn build_pandata() -> Pandata {
     pandata.add_format(Box::new(TsvFormat::new()));
     #[cfg(feature = "avro")]
     pandata.add_format(Box::new(AvroFormat::new()));
+
+    #[cfg(feature = "ipc")]
+    pandata.add_format(Box::new(IpcFormat::new()));
 
     pandata
 }

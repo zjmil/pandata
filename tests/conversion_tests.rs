@@ -18,8 +18,13 @@ use pandata::ParquetFormat;
 #[cfg(feature = "tsv")]
 use pandata::TsvFormat;
 
+#[cfg(feature = "ipc")]
+use pandata::IpcFormat;
+
 #[derive(Clone, Copy)]
 enum FormatKind {
+    #[cfg(feature = "ipc")]
+    Ipc,
     #[cfg(feature = "csv")]
     Csv,
     #[cfg(feature = "json")]
@@ -35,6 +40,8 @@ enum FormatKind {
 impl FormatKind {
     fn name(self) -> &'static str {
         match self {
+            #[cfg(feature = "ipc")]
+            FormatKind::Ipc => "ipc",
             #[cfg(feature = "csv")]
             FormatKind::Csv => "csv",
             #[cfg(feature = "json")]
@@ -135,6 +142,8 @@ fn sample_dataframe() -> Result<DataFrame> {
 
 fn format_for(kind: FormatKind) -> Box<dyn Format> {
     match kind {
+        #[cfg(feature = "ipc")]
+        FormatKind::Ipc => Box::new(IpcFormat::new()),
         #[cfg(feature = "csv")]
         FormatKind::Csv => Box::new(CsvFormat::new()),
         #[cfg(feature = "json")]
@@ -283,4 +292,30 @@ fn converts_csv_to_avro() -> Result<()> {
 #[test]
 fn converts_avro_to_json() -> Result<()> {
     assert_conversion(FormatKind::Avro, FormatKind::Json)
+}
+
+#[cfg(all(feature = "ipc", feature = "csv"))]
+#[test]
+fn converts_csv_to_ipc_and_back() -> Result<()> {
+    assert_conversion(FormatKind::Csv, FormatKind::Ipc)?;
+    assert_conversion(FormatKind::Ipc, FormatKind::Csv)
+}
+
+#[cfg(feature = "ipc")]
+#[test]
+fn rejects_invalid_ipc() -> Result<()> {
+    let fixture = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/records.jsonl");
+    assert!(IpcFormat::new()
+        .read(fixture.to_str().unwrap(), &Args::new())
+        .and_then(|lf| Ok(lf.collect()?))
+        .is_err());
+    Ok(())
+}
+
+#[test]
+fn rejects_unknown_format() {
+    let error = build_pandata()
+        .convert("unused", "unused", "unknown", "unknown")
+        .unwrap_err();
+    assert!(error.to_string().contains("No reader for format: unknown"));
 }
