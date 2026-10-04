@@ -106,6 +106,7 @@ pub trait Format {
 fn canonical_format(format: &str) -> &str {
     match format {
         "arrow" | "feather" => "ipc",
+        "jsonl" => "ndjson",
         _ => format,
     }
 }

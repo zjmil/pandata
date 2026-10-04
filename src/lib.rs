@@ -7,6 +7,8 @@ mod csv;
 mod ipc;
 #[cfg(feature = "json")]
 mod json;
+#[cfg(feature = "ndjson")]
+mod ndjson;
 mod pandata;
 #[cfg(feature = "parquet")]
 mod parquet;
@@ -22,6 +24,8 @@ pub use csv::CsvFormat;
 pub use ipc::IpcFormat;
 #[cfg(feature = "json")]
 pub use json::JsonFormat;
+#[cfg(feature = "ndjson")]
+pub use ndjson::NdjsonFormat;
 pub use pandata::{Args, Format, FormatOptions, Pandata};
 #[cfg(feature = "parquet")]
 pub use parquet::ParquetFormat;
@@ -47,6 +51,8 @@ pub fn build_pandata() -> Pandata {
 
     #[cfg(feature = "ipc")]
     pandata.add_format(Box::new(IpcFormat::new()));
+    #[cfg(feature = "ndjson")]
+    pandata.add_format(Box::new(NdjsonFormat::new()));
 
     pandata
 }
