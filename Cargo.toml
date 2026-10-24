@@ -24,7 +24,9 @@ json = ["polars/json"]
 parquet = ["polars/parquet"]
 tsv = ["csv"]
 avro = ["polars/avro"]
-all = ["csv", "json", "parquet", "tsv", "avro"]
+ipc = ["polars/ipc"]
+ndjson = ["polars/json"]
+all = ["csv", "json", "parquet", "tsv", "avro", "ipc", "ndjson"]
 
 [[bench]]
 name = "conversions"
