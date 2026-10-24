@@ -147,3 +147,13 @@ Notes
 - Keep this file updated as rules evolve
 
 End of agent guide.
+
+Performance gate
+- Compile: `cargo build --release --locked --bench conversions`
+- Benchmark: `POLARS_MAX_THREADS=2 cargo bench --locked --bench conversions`
+- Policy tests: `python3 -m unittest discover -s scripts -p 'test_*.py'`
+- Compare commits: `bash scripts/performance-gate.sh BASE HEAD`
+- Keep the six-case, 100,000-row workload identical across revisions.
+- Confirm slowdowns above 15% in reverse revision order before failing.
+- Never substitute a failed baseline; preserve raw measurements and logs.
+- Keep Rust 1.91.1 pinned in the shared driver used by both workflows.

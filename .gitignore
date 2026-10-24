@@ -4,3 +4,7 @@
 # Rust
 /target
 
+
+# Local performance artifacts
+/performance-results/
+__pycache__/

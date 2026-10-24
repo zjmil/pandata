@@ -61,3 +61,35 @@ and [Feather V2 is the Arrow IPC file format](https://arrow.apache.org/docs/dev/
 For the next phase, evaluate ORC for Hadoop workflows and Excel for spreadsheet
 exchange. Define worksheet selection and type handling before adding Excel;
 evaluate dependency size and read/write support before adding either format.
+
+## Conversion performance
+
+Run all six CSV, JSON (JSON Lines), and Parquet conversions locally:
+
+```sh
+POLARS_MAX_THREADS=2 cargo bench --locked --bench conversions
+cargo bench --locked --bench conversions -- --cases csv-to-json --output results.json
+python3 -m unittest discover -s scripts -p 'test_*.py'
+bash scripts/performance-gate.sh BASE_COMMIT HEAD_COMMIT
+```
+
+The stable Rust harness generates 100,000 deterministic rows from
+`tests/fixtures/benchmark-strings.txt`, warms each conversion, and records 15
+samples, their median, and rows per second. It validates every output outside
+timed sections. Temporary inputs and outputs are automatically removed.
+Measurements include file reads and writes with warmed filesystem caches;
+CLI startup and memory usage are excluded. Ordinary `cargo test` does not run
+the benchmark.
+
+GitHub and Gitea run the same driver for pull requests and default-branch pushes.
+Compare the PR base with its proposed head, or the previous push revision with
+the new revision. Build both committed lockfiles using Rust 1.91.1, with the
+proposed head's harness and fixture on both revisions, enabling only the three
+benchmarked format features. Measure base then head
+with two Polars threads. If a median slows by more than 15%, remeasure those
+cases in head-then-base order. Fail only regressions exceeding 15% in both
+rounds; exactly 15% passes. Build, conversion, validation, missing commit, and
+invalid measurement failures fail the gate, including unavailable baselines
+(e.g. a branch's first push). Retain raw measurements and build/run logs as CI
+artifacts, or in `performance-results/` locally. Run comparisons on an idle
+machine; results from separate runners are not comparable.

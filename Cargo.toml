@@ -27,3 +27,9 @@ avro = ["polars/avro"]
 ipc = ["polars/ipc"]
 ndjson = ["polars/json"]
 all = ["csv", "json", "parquet", "tsv", "avro", "ipc", "ndjson"]
+
+[[bench]]
+name = "conversions"
+harness = false
+test = false
+required-features = ["csv", "json", "parquet"]
