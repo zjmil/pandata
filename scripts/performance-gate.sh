@@ -13,7 +13,8 @@ trap 'rm -rf "$work"' EXIT
 base=$(git -C "$root" rev-parse --verify "$base^{commit}")
 head=$(git -C "$root" rev-parse --verify "$head^{commit}")
 export POLARS_MAX_THREADS=2
-export CARGO_BUILD_JOBS=2
+# Build parallelism does not affect measurements (POLARS_MAX_THREADS does).
+export CARGO_BUILD_JOBS=${CARGO_BUILD_JOBS:-4}
 export RUSTUP_TOOLCHAIN=1.91.1
 export PATH="${CARGO_HOME:-$HOME/.cargo}/bin:$PATH"
 if ! command -v rustup >/dev/null 2>&1; then
@@ -49,14 +50,21 @@ harness = false
 test = false
 required-features = ["csv", "json", "parquet"]
 TOML
-    (cd "$work/$revision" && CARGO_TARGET_DIR="$work/$revision/target" cargo build --release --locked --no-default-features --features csv,json,parquet --bench performance_workload) 2>&1 | tee "$artifacts/build-$revision.log"
+    target="$work/$revision/target"
+    # CI restores the base build from cache so only the head revision compiles.
+    if [[ $revision == base && -n ${PERF_BASE_TARGET_DIR:-} ]]; then target=$PERF_BASE_TARGET_DIR; fi
+    # A restored target may hold an older workload binary; measure() expects exactly one.
+    rm -f "$target/release/deps/"performance_workload-*
+    (cd "$work/$revision" && CARGO_TARGET_DIR="$target" cargo build --release --locked --no-default-features --features csv,json,parquet --bench performance_workload) 2>&1 | tee "$artifacts/build-$revision.log"
 done
 measure() {
     local revision=$1 round=$2
     shift 2
     local binaries=()
     local binary
-    for binary in "$work/$revision/target/release/deps/"performance_workload-*; do
+    local target="$work/$revision/target"
+    if [[ $revision == base && -n ${PERF_BASE_TARGET_DIR:-} ]]; then target=$PERF_BASE_TARGET_DIR; fi
+    for binary in "$target/release/deps/"performance_workload-*; do
         if [[ -f $binary && -x $binary && ${binary##*/} != *.* ]]; then binaries+=("$binary"); fi
     done
     if [[ ${#binaries[@]} != 1 ]]; then

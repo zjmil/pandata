@@ -18,8 +18,15 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
           ref: ${{ gitea.event.pull_request.head.sha || gitea.sha }}
+      - name: Restore base revision build
+        uses: https://github.com/actions/cache@v4
+        with:
+          path: .perf-base-target
+          key: perf-base-${{ gitea.event.pull_request.base.sha || gitea.event.before }}
+          restore-keys: perf-base-
       - name: Compare revisions
         env:
+          PERF_BASE_TARGET_DIR: ${{ gitea.workspace }}/.perf-base-target
           BASE: ${{ gitea.event.pull_request.base.sha || gitea.event.before }}
           HEAD: ${{ gitea.event.pull_request.head.sha || gitea.sha }}
         run: bash scripts/performance-gate.sh "$BASE" "$HEAD"
