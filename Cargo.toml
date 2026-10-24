@@ -29,3 +29,9 @@ ipc = ["polars/ipc"]
 ndjson = ["polars/json"]
 sqlite = ["dep:rusqlite"]
 all = ["csv", "json", "parquet", "tsv", "avro", "ipc", "ndjson", "sqlite"]
+
+[[bench]]
+name = "conversions"
+harness = false
+test = false
+required-features = ["csv", "json", "parquet"]

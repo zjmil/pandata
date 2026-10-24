@@ -1,0 +1,32 @@
+name: Conversion performance
+on:
+  pull_request:
+  push:
+permissions:
+  contents: read
+concurrency:
+  group: performance-${{ gitea.workflow }}-${{ gitea.event.pull_request.number || gitea.ref }}
+  cancel-in-progress: true
+jobs:
+  compare:
+    if: gitea.event_name == 'pull_request' || gitea.ref == format('refs/heads/{0}', gitea.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: https://github.com/actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ gitea.event.pull_request.head.sha || gitea.sha }}
+      - name: Compare revisions
+        env:
+          BASE: ${{ gitea.event.pull_request.base.sha || gitea.event.before }}
+          HEAD: ${{ gitea.event.pull_request.head.sha || gitea.sha }}
+        run: bash scripts/performance-gate.sh "$BASE" "$HEAD"
+      - name: Retain measurements and logs
+        if: always()
+        uses: https://github.com/christopherHX/gitea-upload-artifact@v4
+        with:
+          name: conversion-performance
+          path: performance-results/
+          if-no-files-found: warn
