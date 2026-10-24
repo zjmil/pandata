@@ -1,6 +1,6 @@
-use anyhow::Result;
-use pandata::build_pandata;
-use pandata::parse_format;
+use anyhow::{Context, Result};
+
+use pandata::{build_pandata, parse_format, Args};
 
 // #[derive(Parser, Debug)]
 // #[command(version, about, long_about = None)]
@@ -28,10 +28,11 @@ struct Cli {
     to_file: Option<String>,
     from_format: Option<String>,
     to_format: Option<String>,
+    sqlite_table: Option<String>,
 }
 
 impl Cli {
-    fn parse() -> Cli {
+    fn parse() -> Result<Cli> {
         let mut cli = Cli::default();
         let args: Vec<String> = std::env::args().skip(1).collect();
         let mut idx = 0;
@@ -44,6 +45,17 @@ impl Cli {
                     if let Some(value) = args.get(idx) {
                         cli.from_format = Some(value.to_owned());
                     }
+                }
+                "--sqlite-table" => {
+                    idx += 1;
+                    let value = args
+                        .get(idx)
+                        .context("--sqlite-table requires a table name")?;
+                    anyhow::ensure!(
+                        !value.is_empty() && !value.starts_with("--"),
+                        "--sqlite-table requires a table name"
+                    );
+                    cli.sqlite_table = Some(value.to_owned());
                 }
                 "--to" => {
                     idx += 1;
@@ -62,12 +74,12 @@ impl Cli {
             idx += 1;
         }
 
-        cli
+        Ok(cli)
     }
 }
 
 fn main() -> Result<()> {
-    let cli = Cli::parse();
+    let cli = Cli::parse()?;
 
     let from_file = match cli.from_file.as_deref() {
         Some(x) if x != "-" => x,
@@ -79,13 +91,24 @@ fn main() -> Result<()> {
     };
 
     let from_format = parse_format(cli.from_format.clone(), from_file)
-        .expect("Unable to parse input format. Must be explicit if reading from stdin.");
+        .context("Unable to parse input format. Must be explicit if reading from stdin.")?;
     let to_format = parse_format(cli.to_format.clone(), to_file)
-        .expect("Unable to parse output format. Must be explicit if writing to stdout.");
+        .context("Unable to parse output format. Must be explicit if writing to stdout.")?;
 
     let pandata = build_pandata();
 
-    pandata.convert(from_file, to_file, &from_format, &to_format)?;
+    let mut options = Args::new();
+    if let Some(table) = cli.sqlite_table {
+        options.insert("sqlite-table", table);
+    }
+    pandata.convert_with_options(
+        from_file,
+        to_file,
+        &from_format,
+        &to_format,
+        &options,
+        &options,
+    )?;
 
     Ok(())
 }

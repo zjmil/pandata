@@ -12,6 +12,8 @@ mod ndjson;
 mod pandata;
 #[cfg(feature = "parquet")]
 mod parquet;
+#[cfg(feature = "sqlite")]
+mod sqlite;
 #[cfg(feature = "tsv")]
 mod tsv;
 
@@ -29,6 +31,8 @@ pub use ndjson::NdjsonFormat;
 pub use pandata::{Args, Format, FormatOptions, Pandata};
 #[cfg(feature = "parquet")]
 pub use parquet::ParquetFormat;
+#[cfg(feature = "sqlite")]
+pub use sqlite::SqliteFormat;
 #[cfg(feature = "tsv")]
 pub use tsv::TsvFormat;
 
@@ -53,6 +57,9 @@ pub fn build_pandata() -> Pandata {
     pandata.add_format(Box::new(IpcFormat::new()));
     #[cfg(feature = "ndjson")]
     pandata.add_format(Box::new(NdjsonFormat::new()));
+
+    #[cfg(feature = "sqlite")]
+    pandata.add_format(Box::new(SqliteFormat::new()));
 
     pandata
 }
