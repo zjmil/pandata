@@ -29,12 +29,12 @@ impl Pandata {
         let reader_args = Args::new();
         let reader = self
             .formats
-            .get(from_format)
+            .get(canonical_format(from_format))
             .with_context(|| format!("No reader for format: {}", from_format))?;
         let writer_args = Args::new();
         let writer = self
             .formats
-            .get(to_format)
+            .get(canonical_format(to_format))
             .with_context(|| format!("No writer for format: {}", to_format))?;
         let _ = reader.read_options().options().count();
         let _ = writer.read_options().options().count();
@@ -101,4 +101,12 @@ pub trait Format {
     fn read(&self, path: &str, args: &Args) -> Result<LazyFrame>;
 
     fn write(&self, path: &str, args: &Args, lf: LazyFrame) -> Result<()>;
+}
+
+fn canonical_format(format: &str) -> &str {
+    match format {
+        "arrow" | "feather" => "ipc",
+        "jsonl" => "ndjson",
+        _ => format,
+    }
 }
