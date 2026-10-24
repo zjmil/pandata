@@ -8,3 +8,4 @@
 # Local performance artifacts
 /performance-results/
 __pycache__/
+.perf-base-target/
