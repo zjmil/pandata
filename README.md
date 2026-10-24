@@ -35,6 +35,7 @@ pandata input.parquet - --to json
 | NDJSON / JSON Lines | `ndjson`, `jsonl` | `ndjson` |
 | Parquet | `parquet` | `parquet` |
 | Avro | `avro` | `avro` |
+| SQLite | `sqlite`, `sqlite3`, `db` | `sqlite` |
 | Arrow IPC / Feather V2 | `ipc`, `arrow`, `feather` | `ipc` |
 
 All formats are enabled by default. Use the same names with `--from` and
@@ -61,6 +62,32 @@ and [Feather V2 is the Arrow IPC file format](https://arrow.apache.org/docs/dev/
 For the next phase, evaluate ORC for Hadoop workflows and Excel for spreadsheet
 exchange. Define worksheet selection and type handling before adding Excel;
 evaluate dependency size and read/write support before adding either format.
+
+## SQLite
+
+Convert a single-table database automatically, or select a table when the database
+contains several user tables:
+
+```sh
+pandata input.csv output.sqlite
+pandata database.db output.parquet --sqlite-table events
+pandata input.parquet database.db --sqlite-table events
+```
+
+SQLite writes create `data` by default. Use `--sqlite-table` to choose the input
+or output table (the same name applies to both for SQLite-to-SQLite conversions).
+Existing tables are never overwritten or appended to; choose a new table or file.
+Other tables stay intact, and failed inserts roll back the new table and its rows.
+SQLite requires file paths; stdin/stdout are unsupported.
+
+Enable the optional `sqlite` feature in custom builds. SQLite is bundled, so no
+system SQLite installation is needed. Reads and writes materialize data in memory.
+Integers use signed 64-bit storage, floats use 64-bit storage, and text, blobs,
+booleans, and nulls are supported. Integer and real values in one input column
+promote to floats; other mixed value types produce an error. Empty/all-null
+columns use declared types where recognized. Boolean declarations require 0 or 1.
+Nested and temporal output types, overflowing unsigned integers, and non-finite
+floats produce errors; convert those columns to supported types first.
 
 ## Conversion performance
 

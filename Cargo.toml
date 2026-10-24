@@ -17,6 +17,7 @@ bytes = "1.9.0"
 clap = { version = "4.5.21", features = ["derive"] }
 polars = { version = "0.55.0", features = ["lazy", "streaming", "ipc"] }
 polars-plan = "0.55.0"
+rusqlite = { version = "0.40.1", optional = true, features = ["bundled", "column_decltype"] }
 
 [features]
 default = ["all"]
@@ -27,7 +28,8 @@ tsv = ["csv"]
 avro = ["polars/avro"]
 ipc = ["polars/ipc"]
 ndjson = ["polars/json"]
-all = ["csv", "json", "parquet", "tsv", "avro", "ipc", "ndjson"]
+sqlite = ["dep:rusqlite"]
+all = ["csv", "json", "parquet", "tsv", "avro", "ipc", "ndjson", "sqlite"]
 
 [[bench]]
 name = "conversions"

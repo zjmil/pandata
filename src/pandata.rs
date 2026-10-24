@@ -1,7 +1,7 @@
-use anyhow::Context;
-use anyhow::Result;
-use polars::prelude::LazyFrame;
 use std::collections::{HashMap, HashSet};
+
+use anyhow::{Context, Result};
+use polars::prelude::LazyFrame;
 
 pub struct Pandata {
     formats: HashMap<String, Box<dyn Format>>,
@@ -26,20 +26,41 @@ impl Pandata {
         from_format: &str,
         to_format: &str,
     ) -> Result<()> {
-        let reader_args = Args::new();
+        self.convert_with_options(
+            from_path,
+            to_path,
+            from_format,
+            to_format,
+            &Args::new(),
+            &Args::new(),
+        )
+    }
+
+    pub fn convert_with_options(
+        &self,
+        from_path: &str,
+        to_path: &str,
+        from_format: &str,
+        to_format: &str,
+        reader_args: &Args,
+        writer_args: &Args,
+    ) -> Result<()> {
         let reader = self
             .formats
             .get(canonical_format(from_format))
             .with_context(|| format!("No reader for format: {}", from_format))?;
-        let writer_args = Args::new();
         let writer = self
             .formats
             .get(canonical_format(to_format))
             .with_context(|| format!("No writer for format: {}", to_format))?;
         let _ = reader.read_options().options().count();
         let _ = writer.read_options().options().count();
-        let lf = reader.read(from_path, &reader_args)?;
-        writer.write(to_path, &writer_args, lf)?;
+        let lf = reader
+            .read(from_path, reader_args)
+            .with_context(|| format!("Cannot read {from_format} input: {from_path}"))?;
+        writer
+            .write(to_path, writer_args, lf)
+            .with_context(|| format!("Cannot write {to_format} output: {to_path}"))?;
         Ok(())
     }
 }
@@ -76,6 +97,10 @@ impl Args {
         }
     }
 
+    pub fn insert(&mut self, key: &str, value: String) {
+        self.args.insert(key.to_owned(), vec![value]);
+    }
+
     pub fn list(&self, key: &str) -> Option<Vec<String>> {
         self.args.get(key).map(|x| x.clone())
     }
@@ -107,6 +132,7 @@ fn canonical_format(format: &str) -> &str {
     match format {
         "arrow" | "feather" => "ipc",
         "jsonl" => "ndjson",
+        "sqlite3" | "db" => "sqlite",
         _ => format,
     }
 }

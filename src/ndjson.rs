@@ -1,7 +1,10 @@
 use std::fs::File;
 
 use anyhow::{Context, Result};
-use polars::prelude::{IntoLazy, JsonFormat, JsonReader, JsonWriterOptions, LazyFrame, SerReader};
+use polars::prelude::{
+    IntoLazy, JsonFormat, JsonReader, LazyFrame, NDJsonWriterOptions, SerReader,
+};
+use polars_plan::dsl::{FileWriteFormat, SinkDestination, SinkTarget, UnifiedSinkArgs};
 
 use crate::pandata::{Args, Format, FormatOptions};
 
@@ -24,7 +27,6 @@ impl Format for NdjsonFormat {
     }
 
     fn read(&self, path: &str, _args: &Args) -> Result<LazyFrame> {
-        // Polars 0.44 cannot stream an NDJSON scan into its streaming sinks.
         let file =
             File::open(path).with_context(|| format!("Unable to open NDJSON file: {path}"))?;
         Ok(JsonReader::new(file)
@@ -35,11 +37,15 @@ impl Format for NdjsonFormat {
     }
 
     fn write(&self, path: &str, _args: &Args, lf: LazyFrame) -> Result<()> {
-        let options = JsonWriterOptions {
-            maintain_order: true,
-            ..Default::default()
-        };
-        lf.sink_json(path, options)
-            .with_context(|| format!("Unable to write NDJSON file: {path}"))
+        lf.sink(
+            SinkDestination::File {
+                target: SinkTarget::Path(path.into()),
+            },
+            FileWriteFormat::NDJson(NDJsonWriterOptions::default()),
+            UnifiedSinkArgs::default(),
+        )
+        .and_then(|sink| sink.collect_with_engine(polars::prelude::Engine::Streaming))
+        .with_context(|| format!("Unable to write NDJSON file: {path}"))?;
+        Ok(())
     }
 }
