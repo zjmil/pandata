@@ -2,8 +2,9 @@ use crate::pandata::Format;
 use crate::pandata::{Args, FormatOptions};
 use polars::io::SerReader;
 use polars::prelude::{
-    IntoLazy, JsonFormat as PolarsJsonFormat, JsonReader, JsonWriterOptions, LazyFrame,
+    IntoLazy, JsonFormat as PolarsJsonFormat, JsonReader, LazyFrame, NDJsonWriterOptions,
 };
+use polars_plan::dsl::{FileWriteFormat, SinkDestination, SinkTarget, UnifiedSinkArgs};
 use std::fs::File;
 
 pub struct JsonFormat;
@@ -34,9 +35,15 @@ impl Format for JsonFormat {
     }
 
     fn write(&self, path: &str, _args: &Args, lf: LazyFrame) -> anyhow::Result<()> {
-        let mut options = JsonWriterOptions::default();
-        options.maintain_order = true;
-        lf.sink_json(path, options)?;
+        let options = NDJsonWriterOptions::default();
+        lf.sink(
+            SinkDestination::File {
+                target: SinkTarget::Path(path.into()),
+            },
+            FileWriteFormat::NDJson(options),
+            UnifiedSinkArgs::default(),
+        )?
+        .collect_with_engine(polars::prelude::Engine::Streaming)?;
         Ok(())
     }
 }

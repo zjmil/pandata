@@ -123,14 +123,17 @@ fn sample_dataframe() -> Result<DataFrame> {
         ],
     );
 
-    Ok(DataFrame::new(vec![
-        Column::from(int_col),
-        Column::from(float_col),
-        Column::from(bool_col),
-        Column::from(string_col),
-        Column::from(date_str),
-        Column::from(timestamp_str),
-    ])?)
+    Ok(DataFrame::new(
+        4,
+        vec![
+            Column::from(int_col),
+            Column::from(float_col),
+            Column::from(bool_col),
+            Column::from(string_col),
+            Column::from(date_str),
+            Column::from(timestamp_str),
+        ],
+    )?)
 }
 
 fn format_for(kind: FormatKind) -> Box<dyn Format> {
@@ -164,7 +167,7 @@ fn assert_frames_equal(expected: &DataFrame, actual: &DataFrame) -> Result<()> {
     assert_eq!(expected.shape(), actual.shape());
     assert_eq!(expected.get_column_names(), actual.get_column_names());
 
-    for (expected_col, actual_col) in expected.get_columns().iter().zip(actual.get_columns()) {
+    for (expected_col, actual_col) in expected.columns().iter().zip(actual.columns()) {
         assert_eq!(expected_col.name(), actual_col.name());
 
         let expected_dtype = expected_col.dtype();

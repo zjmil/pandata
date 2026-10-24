@@ -14,7 +14,7 @@ base=$(git -C "$root" rev-parse --verify "$base^{commit}")
 head=$(git -C "$root" rev-parse --verify "$head^{commit}")
 export POLARS_MAX_THREADS=2
 export CARGO_BUILD_JOBS=2
-export RUSTUP_TOOLCHAIN=1.91.1
+export RUSTUP_TOOLCHAIN=1.99.1
 export PATH="${CARGO_HOME:-$HOME/.cargo}/bin:$PATH"
 if ! command -v rustup >/dev/null 2>&1; then
     python3 - "$work/rustup-init.sh" <<'PYTHON'
