@@ -27,6 +27,11 @@ pandata input.parquet - --to json
 
 ## Conversion performance
 
+Local builds use the Rust version pinned in `rust-toolchain.toml`. Both revisions
+in a performance comparison must have committed lockfiles compatible with the
+comparison compiler; prepare a compatibility update before a dependency upgrade
+when the previous lockfile cannot build.
+
 Run all six CSV, JSON (JSON Lines), and Parquet conversions locally:
 
 ```sh
