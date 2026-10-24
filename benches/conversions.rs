@@ -73,7 +73,7 @@ fn main() -> Result<()> {
     let strings: Vec<&str> = include_str!("../tests/fixtures/benchmark-strings.txt")
         .lines()
         .collect();
-    let expected = DataFrame::new(vec![
+    let columns = vec![
         Column::from(Series::new(
             "id".into(),
             (0..ROWS as i64).collect::<Vec<_>>(),
@@ -94,7 +94,11 @@ fn main() -> Result<()> {
                 .map(|i| strings[i % strings.len()])
                 .collect::<Vec<_>>(),
         )),
-    ])?;
+    ];
+    let mut expected = DataFrame::default();
+    for column in columns {
+        expected.with_column(column)?;
+    }
     let temp = TempDir::new()?;
     for name in ["csv", "json", "parquet"] {
         let path = temp.0.join(format!("input.{name}"));

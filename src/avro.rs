@@ -30,7 +30,9 @@ impl Format for AvroFormat {
     fn write(&self, path: &str, _args: &Args, lf: LazyFrame) -> anyhow::Result<()> {
         let mut file = File::create(path)?;
         let mut df = lf.collect()?;
-        df.as_single_chunk_par();
+        // AvroWriter requires one chunk; aligned multi-chunk frames produce
+        // concatenated file headers rather than a single valid container.
+        df.rechunk_mut_par();
         AvroWriter::new(&mut file)
             .with_name("pandata".to_string())
             .finish(&mut df)?;

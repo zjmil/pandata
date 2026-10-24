@@ -91,6 +91,11 @@ floats produce errors; convert those columns to supported types first.
 
 ## Conversion performance
 
+Local builds use the Rust version pinned in `rust-toolchain.toml`. Both revisions
+in a performance comparison must have committed lockfiles compatible with the
+comparison compiler; prepare a compatibility update before a dependency upgrade
+when the previous lockfile cannot build.
+
 Run all six CSV, JSON (JSON Lines), and Parquet conversions locally:
 
 ```sh
@@ -110,7 +115,7 @@ the benchmark.
 
 GitHub and Gitea run the same driver for pull requests and default-branch pushes.
 Compare the PR base with its proposed head, or the previous push revision with
-the new revision. Build both committed lockfiles using Rust 1.91.1, with the
+the new revision. Build both committed lockfiles using Rust 1.99.1, with the
 proposed head's harness and fixture on both revisions, enabling only the three
 benchmarked format features. Measure base then head
 with two Polars threads. If a median slows by more than 15%, remeasure those

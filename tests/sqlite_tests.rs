@@ -113,7 +113,7 @@ fn rolls_back_failed_writes_and_preserves_other_tables() -> Result<()> {
     let connection = Connection::open(&output)?;
     connection
         .execute_batch("CREATE TABLE existing (n INTEGER); INSERT INTO existing VALUES (42);")?;
-    let frame = DataFrame::new(vec![Series::new("n".into(), &[1_u64, u64::MAX]).into()])?;
+    let frame = DataFrame::new(2, vec![Series::new("n".into(), &[1_u64, u64::MAX]).into()])?;
     assert!(SqliteFormat::new()
         .write(output.to_str().unwrap(), &Args::new(), frame.lazy())
         .is_err());
@@ -206,7 +206,7 @@ fn rejects_invalid_boolean_and_nonfinite_float() -> Result<()> {
     assert!(read(&input, &Args::new()).is_err());
     for value in [f64::NAN, f64::INFINITY] {
         let output = temp.file("float.db");
-        let frame = DataFrame::new(vec![Series::new("n".into(), &[value]).into()])?;
+        let frame = DataFrame::new(1, vec![Series::new("n".into(), &[value]).into()])?;
         assert!(SqliteFormat::new()
             .write(output.to_str().unwrap(), &Args::new(), frame.lazy())
             .is_err());

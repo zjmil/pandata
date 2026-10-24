@@ -13,7 +13,7 @@ jobs:
         uses: https://github.com/actions/checkout@v4
 
       - name: Set up Rust
-        uses: https://github.com/dtolnay/rust-toolchain@1.91.1
+        uses: https://github.com/dtolnay/rust-toolchain@1.99.1
 
       - name: Cache Cargo
         uses: https://github.com/Swatinem/rust-cache@v2

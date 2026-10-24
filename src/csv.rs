@@ -1,6 +1,7 @@
 use crate::pandata::{Args, Format, FormatOptions};
 use polars::io::SerReader;
 use polars::prelude::{CsvParseOptions, CsvReadOptions, CsvWriterOptions, IntoLazy, LazyFrame};
+use polars_plan::dsl::{FileWriteFormat, SinkDestination, SinkTarget, UnifiedSinkArgs};
 use std::path::PathBuf;
 
 pub struct CsvFormat;
@@ -42,9 +43,15 @@ impl Format for CsvFormat {
     }
 
     fn write(&self, path: &str, _args: &Args, lf: LazyFrame) -> anyhow::Result<()> {
-        let mut options = CsvWriterOptions::default();
-        options.maintain_order = true;
-        lf.sink_csv(path, options)?;
+        let options = CsvWriterOptions::default();
+        lf.sink(
+            SinkDestination::File {
+                target: SinkTarget::Path(path.into()),
+            },
+            FileWriteFormat::Csv(options),
+            UnifiedSinkArgs::default(),
+        )?
+        .collect_with_engine(polars::prelude::Engine::Streaming)?;
         Ok(())
     }
 }

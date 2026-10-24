@@ -149,6 +149,7 @@ impl Format for SqliteFormat {
                 column.push(value);
             }
         }
+        let height = values.first().map_or(0, Vec::len);
         let columns = metadata
             .into_iter()
             .zip(values)
@@ -174,7 +175,7 @@ impl Format for SqliteFormat {
                 )?))
             })
             .collect::<Result<Vec<_>>>()?;
-        Ok(DataFrame::new(columns)?.lazy())
+        Ok(DataFrame::new(height, columns)?.lazy())
     }
 
     fn write(&self, path: &str, args: &Args, lf: LazyFrame) -> Result<()> {
@@ -192,7 +193,7 @@ impl Format for SqliteFormat {
                 .unwrap_or_else(|| "data".to_owned()),
         )?;
         let definitions = frame
-            .get_columns()
+            .columns()
             .iter()
             .map(|column| {
                 let sql_type = match column.dtype() {
@@ -229,7 +230,7 @@ impl Format for SqliteFormat {
             let mut values = Vec::with_capacity(frame.width());
             for row in 0..frame.height() {
                 values.clear();
-                for column in frame.get_columns() {
+                for column in frame.columns() {
                     values.push(sqlite_value(column.get(row)?)?);
                 }
                 insert.execute(params_from_iter(&values))?;

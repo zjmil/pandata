@@ -2,6 +2,7 @@ use std::fs::File;
 
 use anyhow::{Context, Result};
 use polars::prelude::{IntoLazy, IpcReader, IpcWriterOptions, LazyFrame, SerReader};
+use polars_plan::dsl::{FileWriteFormat, SinkDestination, SinkTarget, UnifiedSinkArgs};
 
 use crate::pandata::{Args, Format, FormatOptions};
 
@@ -24,7 +25,6 @@ impl Format for IpcFormat {
     }
 
     fn read(&self, path: &str, _args: &Args) -> Result<LazyFrame> {
-        // Polars 0.44 cannot stream an IPC scan into its streaming sinks.
         let file = File::open(path).with_context(|| format!("Unable to open IPC file: {path}"))?;
         Ok(IpcReader::new(file)
             .finish()
@@ -33,11 +33,15 @@ impl Format for IpcFormat {
     }
 
     fn write(&self, path: &str, _args: &Args, lf: LazyFrame) -> Result<()> {
-        let options = IpcWriterOptions {
-            maintain_order: true,
-            ..Default::default()
-        };
-        lf.sink_ipc(path, options)
-            .with_context(|| format!("Unable to write IPC file: {path}"))
+        lf.sink(
+            SinkDestination::File {
+                target: SinkTarget::Path(path.into()),
+            },
+            FileWriteFormat::Ipc(IpcWriterOptions::default()),
+            UnifiedSinkArgs::default(),
+        )
+        .and_then(|sink| sink.collect_with_engine(polars::prelude::Engine::Streaming))
+        .with_context(|| format!("Unable to write IPC file: {path}"))?;
+        Ok(())
     }
 }

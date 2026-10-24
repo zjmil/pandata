@@ -156,4 +156,4 @@ Performance gate
 - Keep the six-case, 100,000-row workload identical across revisions.
 - Confirm slowdowns above 15% in reverse revision order before failing.
 - Never substitute a failed baseline; preserve raw measurements and logs.
-- Keep Rust 1.91.1 pinned in the shared driver used by both workflows.
+- Keep Rust 1.99.1 pinned in the shared driver used by both workflows.
