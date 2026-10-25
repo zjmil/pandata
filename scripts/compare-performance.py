@@ -8,8 +8,8 @@ from decimal import Decimal
 from pathlib import Path
 
 MARKER = '<!-- pandata-performance -->'
-CASES = tuple(f'{a}-to-{b}' for a in ('csv', 'json', 'parquet')
-              for b in ('csv', 'json', 'parquet') if a != b)
+CASES = tuple(f'{a}-to-{b}' for a in ('csv', 'ndjson', 'parquet')
+              for b in ('csv', 'ndjson', 'parquet') if a != b)
 
 
 def load(path, cases):

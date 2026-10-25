@@ -47,14 +47,14 @@ name = "performance_workload"
 path = "benches/workload.rs"
 harness = false
 test = false
-required-features = ["csv", "json", "parquet"]
+required-features = ["csv", "ndjson", "parquet"]
 TOML
     target="$work/$revision/target"
     # CI restores the base build from cache so only the head revision compiles.
     if [[ $revision == base && -n ${PERF_BASE_TARGET_DIR:-} ]]; then target=$PERF_BASE_TARGET_DIR; fi
     # A restored target may hold an older workload binary; measure() expects exactly one.
     rm -f "$target/release/deps/"performance_workload-*
-    (cd "$work/$revision" && CARGO_TARGET_DIR="$target" cargo build --release --locked --no-default-features --features csv,json,parquet --bench performance_workload) 2>&1 | tee "$artifacts/build-$revision.log"
+    (cd "$work/$revision" && CARGO_TARGET_DIR="$target" cargo build --release --locked --no-default-features --features csv,ndjson,parquet --bench performance_workload) 2>&1 | tee "$artifacts/build-$revision.log"
 done
 measure() {
     local revision=$1 round=$2

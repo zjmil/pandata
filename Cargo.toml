@@ -35,4 +35,4 @@ all = ["csv", "json", "parquet", "tsv", "avro", "ipc", "ndjson", "sqlite"]
 name = "conversions"
 harness = false
 test = false
-required-features = ["csv", "json", "parquet"]
+required-features = ["csv", "ndjson", "parquet"]

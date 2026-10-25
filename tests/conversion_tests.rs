@@ -353,6 +353,38 @@ fn cli_infers_new_format_extensions() -> Result<()> {
     Ok(())
 }
 
+#[cfg(all(feature = "json", feature = "ndjson"))]
+#[test]
+fn reads_json_array_matching_json_lines() -> Result<()> {
+    let fixtures = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    let expected = read_frame(FormatKind::Ndjson, &fixtures.join("records.jsonl"))?;
+    let actual = read_frame(FormatKind::Json, &fixtures.join("records.json"))?;
+    assert_frames_equal(&expected, &actual)
+}
+
+#[cfg(feature = "json")]
+#[test]
+fn writes_json_array() -> Result<()> {
+    let temp = TempDir::new()?;
+    let output = temp.path().join("output.json");
+    write_frame(FormatKind::Json, &output, &sample_dataframe()?)?;
+    let text = fs::read_to_string(&output)?;
+    assert!(text.trim_start().starts_with('['), "{text}");
+    assert!(text.trim_end().ends_with(']'), "{text}");
+    Ok(())
+}
+
+#[cfg(feature = "json")]
+#[test]
+fn rejects_json_lines_as_json() -> Result<()> {
+    let fixture = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/records.jsonl");
+    assert!(JsonFormat::new()
+        .read(fixture.to_str().unwrap(), &Args::new())
+        .and_then(|lf| Ok(lf.collect()?))
+        .is_err());
+    Ok(())
+}
+
 #[cfg(feature = "ipc")]
 #[test]
 fn rejects_invalid_ipc() -> Result<()> {

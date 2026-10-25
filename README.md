@@ -31,7 +31,7 @@ pandata input.parquet - --to json
 | --- | --- | --- |
 | CSV | `csv` | `csv` |
 | TSV | `tsv` | `tsv` |
-| JSON Lines (legacy name) | `json` | `json` |
+| JSON (array of objects) | `json` | `json` |
 | NDJSON / JSON Lines | `ndjson`, `jsonl` | `ndjson` |
 | Parquet | `parquet` | `parquet` |
 | Avro | `avro` | `avro` |
@@ -39,8 +39,10 @@ pandata input.parquet - --to json
 | Arrow IPC / Feather V2 | `ipc`, `arrow`, `feather` | `ipc` |
 
 All formats are enabled by default. Use the same names with `--from` and
-`--to` when extensions are missing. The `json` format retains its existing
-JSON Lines behavior; JSON arrays and legacy Feather V1 are not supported.
+`--to` when extensions are missing. `json` reads and writes a single JSON
+array of row objects; use `ndjson` or `jsonl` for one object per line. Polars
+cannot stream JSON arrays, so JSON reads and writes hold the whole table in
+memory; prefer NDJSON for large data. Legacy Feather V1 is not supported.
 Arrow support reads and writes IPC files, rather than IPC record batch streams.
 NDJSON and IPC currently read into memory because Polars 0.44 cannot feed
 these lazy scans into streaming sinks. Writes use streaming sinks.
@@ -48,6 +50,7 @@ these lazy scans into streaming sinks. Writes use streaming sinks.
 ```sh
 pandata events.jsonl events.feather
 pandata events.arrow events.ndjson
+pandata events.jsonl events.json
 cargo build --no-default-features --features csv,parquet,ipc,ndjson
 ```
 
@@ -96,11 +99,11 @@ in a performance comparison must have committed lockfiles compatible with the
 comparison compiler; prepare a compatibility update before a dependency upgrade
 when the previous lockfile cannot build.
 
-Run all six CSV, JSON (JSON Lines), and Parquet conversions locally:
+Run all six CSV, NDJSON, and Parquet conversions locally:
 
 ```sh
 POLARS_MAX_THREADS=2 cargo bench --locked --bench conversions
-cargo bench --locked --bench conversions -- --cases csv-to-json --output results.json
+cargo bench --locked --bench conversions -- --cases csv-to-ndjson --output results.json
 python3 -m unittest discover -s scripts -p 'test_*.py'
 bash scripts/performance-gate.sh BASE_COMMIT HEAD_COMMIT
 ```

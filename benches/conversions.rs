@@ -5,17 +5,17 @@ use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use anyhow::{bail, ensure, Context, Result};
 use polars::prelude::{Column, DataFrame, IntoLazy, NamedFrom, Series};
 
-use pandata::{build_pandata, Args, CsvFormat, Format, JsonFormat, ParquetFormat};
+use pandata::{build_pandata, Args, CsvFormat, Format, NdjsonFormat, ParquetFormat};
 
 const ROWS: usize = 100_000;
 const SAMPLES: usize = 15;
 const CASES: [(&str, &str); 6] = [
-    ("csv", "json"),
+    ("csv", "ndjson"),
     ("csv", "parquet"),
-    ("json", "csv"),
-    ("json", "parquet"),
+    ("ndjson", "csv"),
+    ("ndjson", "parquet"),
     ("parquet", "csv"),
-    ("parquet", "json"),
+    ("parquet", "ndjson"),
 ];
 
 struct TempDir(PathBuf);
@@ -37,7 +37,7 @@ impl Drop for TempDir {
 fn format(name: &str) -> Result<Box<dyn Format>> {
     match name {
         "csv" => Ok(Box::new(CsvFormat::new())),
-        "json" => Ok(Box::new(JsonFormat::new())),
+        "ndjson" => Ok(Box::new(NdjsonFormat::new())),
         "parquet" => Ok(Box::new(ParquetFormat::new())),
         _ => bail!("Unknown format: {name}"),
     }
@@ -100,7 +100,7 @@ fn main() -> Result<()> {
         expected.with_column(column)?;
     }
     let temp = TempDir::new()?;
-    for name in ["csv", "json", "parquet"] {
+    for name in ["csv", "ndjson", "parquet"] {
         let path = temp.0.join(format!("input.{name}"));
         format(name)?.write(
             path.to_str().context("Invalid temporary path")?,
