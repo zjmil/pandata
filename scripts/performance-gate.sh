@@ -75,14 +75,14 @@ measure() {
 measure base initial
 measure head initial
 python3 "$root/scripts/compare-performance.py" "$artifacts/initial-base.json" "$artifacts/initial-head.json" \
-    --candidates "$artifacts/candidates.txt" | tee "$artifacts/comparison.log"
+    --candidates "$artifacts/candidates.txt" --markdown "$artifacts/summary.md" | tee "$artifacts/comparison.log"
 if [[ -s "$artifacts/candidates.txt" ]]; then
     cases=$(cat "$artifacts/candidates.txt")
     measure head confirmation --cases "$cases"
     measure base confirmation --cases "$cases"
     python3 "$root/scripts/compare-performance.py" "$artifacts/initial-base.json" "$artifacts/initial-head.json" \
         --candidates "$artifacts/candidates.txt" --confirmation-base "$artifacts/confirmation-base.json" \
-        --confirmation-head "$artifacts/confirmation-head.json" | tee "$artifacts/confirmation-comparison.log"
+        --confirmation-head "$artifacts/confirmation-head.json" --markdown "$artifacts/summary.md" | tee "$artifacts/confirmation-comparison.log"
 fi
 }
 run_gate 2>&1 | tee "$artifacts/driver.log"

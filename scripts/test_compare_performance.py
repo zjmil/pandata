@@ -42,12 +42,45 @@ class PolicyTests(unittest.TestCase):
                 if confirmation is not None:
                     command += ['--confirmation-base', write('cb.json', policy.CASES, 1),
                                 '--confirmation-head', write('ch.json', policy.CASES, confirmation)]
+                command += ['--markdown', str(folder / 'summary.md')]
                 result = subprocess.run(command, capture_output=True, text=True)
                 self.assertEqual(result.returncode, expected, result.stderr)
+                summary = (folder / 'summary.md').read_text()
+                self.assertTrue(summary.startswith(policy.MARKER))
+                self.assertEqual('Confirmed slowdowns' in summary, expected == 1)
             result = subprocess.run([sys.executable, script, base,
                                      write('missing.json', [], 1), '--candidates', candidates],
                                     capture_output=True)
             self.assertNotEqual(result.returncode, 0)
+
+    def test_markdown_report(self):
+        rows = [(case, 1, 1) for case in policy.CASES]
+        clean = policy.report(rows, [])
+        self.assertTrue(clean.startswith(policy.MARKER))
+        self.assertTrue(all(f'| {case} |' in clean for case in policy.CASES))
+        self.assertIn('No slowdowns above 15%.', clean)
+        slow_rows = [(policy.CASES[0], 1, 1.2)]
+        pending = policy.report(slow_rows, [policy.CASES[0]])
+        self.assertIn('awaiting confirmation', pending)
+        confirmed = policy.report(slow_rows, [policy.CASES[0]], slow_rows, [policy.CASES[0]])
+        self.assertIn('Confirmed slowdowns above 15%: ' + policy.CASES[0], confirmed)
+        self.assertIn('Confirmation run', confirmed)
+        unconfirmed = policy.report(slow_rows, [policy.CASES[0]], [(policy.CASES[0], 1, 1)], [])
+        self.assertIn('Initial slowdowns not confirmed', unconfirmed)
+
+    def test_comment_body(self):
+        spec = importlib.util.spec_from_file_location(
+            'poster', Path(__file__).with_name('post-performance-comment.py'))
+        poster = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(poster)
+        self.assertEqual(poster.MARKER, policy.MARKER)
+        comments = [{'id': 1, 'body': 'hi'}, {'id': 2, 'body': None}, {'id': 3, 'body': policy.MARKER}]
+        self.assertEqual(poster.find_comment(comments), 3)
+        self.assertIsNone(poster.find_comment(comments[:2]))
+        failed = poster.body('/nonexistent/summary.md', 'a' * 40, 'b' * 40, 'https://run')
+        self.assertIn(policy.MARKER, failed)
+        self.assertIn('Comparison failed', failed)
+        self.assertIn('[Run logs](https://run)', failed)
 
     def test_measurement_fixtures(self):
         case = policy.CASES[0]
