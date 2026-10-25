@@ -1,15 +1,16 @@
 name: Conversion performance
+# Report-only: timings are posted as a PR comment and never fail the check.
 on:
   pull_request:
-  push:
 permissions:
   contents: read
+  issues: write
+  pull-requests: write
 concurrency:
-  group: performance-${{ gitea.workflow }}-${{ gitea.event.pull_request.number || gitea.ref }}
+  group: performance-${{ gitea.workflow }}-${{ gitea.event.pull_request.number }}
   cancel-in-progress: true
 jobs:
   compare:
-    if: gitea.event_name == 'pull_request' || gitea.ref == format('refs/heads/{0}', gitea.event.repository.default_branch)
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -17,19 +18,33 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-          ref: ${{ gitea.event.pull_request.head.sha || gitea.sha }}
+          ref: ${{ gitea.event.pull_request.head.sha }}
       - name: Restore base revision build
         uses: https://github.com/actions/cache@v4
         with:
           path: .perf-base-target
-          key: perf-base-${{ gitea.event.pull_request.base.sha || gitea.event.before }}
+          key: perf-base-${{ gitea.event.pull_request.base.sha }}
           restore-keys: perf-base-
       - name: Compare revisions
         env:
           PERF_BASE_TARGET_DIR: ${{ gitea.workspace }}/.perf-base-target
-          BASE: ${{ gitea.event.pull_request.base.sha || gitea.event.before }}
-          HEAD: ${{ gitea.event.pull_request.head.sha || gitea.sha }}
-        run: bash scripts/performance-gate.sh "$BASE" "$HEAD"
+          BASE: ${{ gitea.event.pull_request.base.sha }}
+          HEAD: ${{ gitea.event.pull_request.head.sha }}
+        run: |
+          bash scripts/performance-gate.sh "$BASE" "$HEAD" \
+            || echo "::warning::Performance comparison reported slowdowns or failed; see PR comment"
+      - name: Post PR comment
+        if: always()
+        env:
+          GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
+          API_URL: ${{ gitea.server_url }}/api/v1
+          REPO: ${{ gitea.repository }}
+          PR: ${{ gitea.event.pull_request.number }}
+          BASE: ${{ gitea.event.pull_request.base.sha }}
+          HEAD: ${{ gitea.event.pull_request.head.sha }}
+          RUN_URL: ${{ gitea.server_url }}/${{ gitea.repository }}/actions/runs/${{ gitea.run_number }}
+          SUMMARY: performance-results/summary.md
+        run: python3 scripts/post-performance-comment.py
       - name: Retain measurements and logs
         if: always()
         uses: https://github.com/christopherHX/gitea-upload-artifact@v4

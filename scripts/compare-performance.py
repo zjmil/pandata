@@ -7,6 +7,7 @@ import statistics
 from decimal import Decimal
 from pathlib import Path
 
+MARKER = '<!-- pandata-performance -->'
 CASES = tuple(f'{a}-to-{b}' for a in ('csv', 'json', 'parquet')
               for b in ('csv', 'json', 'parquet') if a != b)
 
@@ -34,13 +35,39 @@ def slow(base, head):
 
 def compare(base, head, cases):
     print(f'{"Case":20} {"Base (s)":>12} {"Head (s)":>12} {"Change":>10}')
-    failures = []
+    rows, failures = [], []
     for case in cases:
         before, after = base[case]['median_seconds'], head[case]['median_seconds']
+        rows.append((case, before, after))
         print(f'{case:20} {before:12.6f} {after:12.6f} {(after / before - 1):+10.2%}')
         if slow(before, after):
             failures.append(case)
-    return failures
+    return rows, failures
+
+
+def table(title, rows):
+    lines = [f'**{title}**', '', '| Case | Base (s) | Head (s) | Change |', '|---|---:|---:|---:|']
+    for case, before, after in rows:
+        change = after / before - 1
+        flag = ' ⚠️' if slow(before, after) else ''
+        lines.append(f'| {case} | {before:.6f} | {after:.6f} | {change:+.2%}{flag} |')
+    return lines + ['']
+
+
+def report(initial, failures, confirmation=None, confirmed=()):
+    lines = [MARKER, '### Conversion performance (median of 15 runs, 100,000 rows)', '']
+    lines += table('Initial run', initial)
+    if confirmation:
+        lines += table('Confirmation run (reverse order)', confirmation)
+    if confirmed:
+        lines.append('⚠️ Confirmed slowdowns above 15%: ' + ', '.join(confirmed))
+    elif failures and confirmation is None:
+        lines.append('Slowdowns above 15% awaiting confirmation: ' + ', '.join(failures))
+    elif failures:
+        lines.append('Initial slowdowns not confirmed: ' + ', '.join(failures))
+    else:
+        lines.append('No slowdowns above 15%.')
+    return '\n'.join(lines) + '\n'
 
 
 def main():
@@ -50,17 +77,21 @@ def main():
     parser.add_argument('--candidates', required=True)
     parser.add_argument('--confirmation-base')
     parser.add_argument('--confirmation-head')
+    parser.add_argument('--markdown', help='Write a Markdown summary for PR comments')
     args = parser.parse_args()
-    failures = compare(load(args.base, CASES), load(args.head, CASES), CASES)
+    initial, failures = compare(load(args.base, CASES), load(args.head, CASES), CASES)
     Path(args.candidates).write_text(','.join(failures))
     if bool(args.confirmation_base) != bool(args.confirmation_head):
         raise ValueError('Both confirmation files are required')
+    confirmation, confirmed = None, []
     if args.confirmation_base:
-        confirmed = compare(load(args.confirmation_base, failures),
-                            load(args.confirmation_head, failures), failures)
-        if confirmed:
-            print('Persistent regressions: ' + ', '.join(confirmed))
-            return 1
+        confirmation, confirmed = compare(load(args.confirmation_base, failures),
+                                          load(args.confirmation_head, failures), failures)
+    if args.markdown:
+        Path(args.markdown).write_text(report(initial, failures, confirmation, confirmed))
+    if confirmed:
+        print('Persistent regressions: ' + ', '.join(confirmed))
+        return 1
     return 0
 
 

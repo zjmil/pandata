@@ -157,3 +157,6 @@ Performance gate
 - Confirm slowdowns above 15% in reverse revision order before failing.
 - Never substitute a failed baseline; preserve raw measurements and logs.
 - Keep Rust 1.99.1 pinned in the shared driver used by both workflows.
+- Gitea runs it report-only on PRs; `scripts/post-performance-comment.py`
+  creates or updates one PR comment from `performance-results/summary.md`.
+- The local script and the GitHub workflow still fail on confirmed slowdowns.
