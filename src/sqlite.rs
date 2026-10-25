@@ -100,7 +100,6 @@ impl Format for SqliteFormat {
             connection.prepare(&format!("SELECT * FROM {}", quote_identifier(&table)?))?;
         let metadata: Vec<_> = statement
             .columns()
-            .iter()
             .map(|column| {
                 (
                     column.name().to_owned(),
